@@ -1,8 +1,7 @@
-# app/models/job.py
-from sqlalchemy import Column, Integer, String, Text, DateTime, Enum as SAEnum
-from sqlalchemy.sql import func
+from sqlalchemy import Column, DateTime, Integer, String, Text, ForeignKey, Enum as SAEnum
 from sqlalchemy.orm import relationship
-from app.database import Base
+from app.models.base import BaseModel
+from sqlalchemy.sql import func
 import enum
 
 class JobStatus(str, enum.Enum):
@@ -10,10 +9,9 @@ class JobStatus(str, enum.Enum):
     CLOSED = "closed"
     DRAFT = "draft"
 
-class Job(Base):
+class Job(BaseModel):
     __tablename__ = "jobs"
 
-    id = Column(Integer, primary_key=True, index=True)
     title = Column(String(255), nullable=False)
     company = Column(String(255), nullable=False)
     description = Column(Text, nullable=False)
@@ -31,8 +29,9 @@ class Job(Base):
         nullable=False,
         server_default=JobStatus.ACTIVE.value,
     )
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    posted_date = Column(DateTime(timezone=True), server_default=func.now())
+    posted_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    posted_by = relationship("User", back_populates="jobs_posted")
 
     applications = relationship(
         "Application",

@@ -1,10 +1,10 @@
 from sqlalchemy.orm import Session
 from app.database import SessionLocal, engine
-from app.models import Job, Base
+from app.models import Job, BaseModel
 from app.models.user import User
 from app.auth import get_password_hash
 
-Base.metadata.create_all(bind=engine)
+BaseModel.metadata.create_all(bind=engine)
 
 def create_sample_jobs():
     db = SessionLocal()
@@ -55,7 +55,6 @@ def create_sample_jobs():
     ]
 
     for job_data in sample_jobs:
-        # Check if job already exists
         existing_job = db.query(Job).filter(
             Job.title == job_data["title"],
             Job.company == job_data["company"]
@@ -72,14 +71,13 @@ def create_sample_jobs():
 def create_admin_user():
     db = SessionLocal()
 
-    # Check if admin already exists
     admin = db.query(User).filter(User.email == "admin@jobboard.com").first()
     if not admin:
         admin_user = User(
             first_name="Admin",
             last_name="User",
             email="admin@jobboard.com",
-            password_hash=get_password_hash("admin123"),  # Change this!
+            password_hash=get_password_hash("admin123"),
             is_admin=True
         )
         db.add(admin_user)

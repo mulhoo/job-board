@@ -1,7 +1,6 @@
-from app.database import Base
-
+from .base import BaseModel
+from .job import Job, JobStatus
+from .application import Application, ApplicationStatus
 from .user import User
-from .job import Job
-from .application import Application
 
-__all__ = ["Base", "User", "Job", "Application"]
+__all__ = ["BaseModel", "Job", "JobStatus", "Application", "ApplicationStatus", "User"]

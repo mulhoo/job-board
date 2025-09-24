@@ -1,7 +1,7 @@
 from sqlalchemy import Column, ForeignKey, Integer, String, DateTime, Enum as SAEnum
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from app.database import Base
+from app.models.base import BaseModel
 import enum
 
 class ApplicationStatus(str, enum.Enum):
@@ -11,10 +11,9 @@ class ApplicationStatus(str, enum.Enum):
     REJECTED = "rejected"
     ACCEPTED = "accepted"
 
-class Application(Base):
+class Application(BaseModel):
     __tablename__ = "applications"
 
-    id = Column(Integer, primary_key=True, index=True)
     job_id = Column(Integer, ForeignKey("jobs.id"), nullable=False)
     candidate_name = Column(String(255), nullable=False)
     candidate_email = Column(String(255), nullable=False)
@@ -32,7 +31,5 @@ class Application(Base):
         server_default=ApplicationStatus.SUBMITTED.value,
     )
     applied_date = Column(DateTime(timezone=True), server_default=func.now())
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     job = relationship("Job", back_populates="applications")
