@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from app.database import SessionLocal, engine
 from app.models import Job, BaseModel
 from app.models.user import User
+from app.models.job_source import JobSource
 from app.auth import get_password_hash
 
 BaseModel.metadata.create_all(bind=engine)
@@ -86,6 +87,31 @@ def create_admin_user():
 
     db.close()
 
+def create_job_sources():
+    db = SessionLocal()
+
+    sources = [
+        {
+            "name": "indeed",
+            "display_name": "Indeed",
+            "base_url": "https://www.indeed.com",
+            "description": "World's #1 job site",
+            "is_active": True,
+            "rate_limit_seconds": 2,
+            "max_jobs_per_scrape": 25
+        },
+    ]
+
+    for source_data in sources:
+        existing = db.query(JobSource).filter(JobSource.name == source_data["name"]).first()
+        if not existing:
+            source = JobSource(**source_data)
+            db.add(source)
+
+    db.commit()
+    db.close()
+
 if __name__ == "__main__":
     create_sample_jobs()
     create_admin_user()
+    create_job_sources()

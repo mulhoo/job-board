@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 import app.routers.jobs as jobs
 import app.routers.users as users
+import app.routers.scraping as scraping
 # import app.routers.applications as applications
 
 app = FastAPI(
@@ -22,6 +23,7 @@ app.add_middleware(
 # 🔗 Routers
 app.include_router(jobs.router, prefix="")
 app.include_router(users.router, prefix="")
+app.include_router(scraping.router)
 # app.include_router(applications.router, prefix="")
 
 @app.get("/")

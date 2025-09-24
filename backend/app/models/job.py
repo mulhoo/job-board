@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, Integer, String, Text, ForeignKey, Enum as SAEnum
+from sqlalchemy import Column, DateTime, Integer, Boolean, String, Text, ForeignKey, Enum as SAEnum
 from sqlalchemy.orm import relationship
 from app.models.base import BaseModel
 from sqlalchemy.sql import func
@@ -32,6 +32,13 @@ class Job(BaseModel):
     posted_date = Column(DateTime(timezone=True), server_default=func.now())
     posted_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     posted_by = relationship("User", back_populates="jobs_posted")
+
+    source_id = Column(Integer, ForeignKey("job_sources.id"), nullable=True)
+    external_id = Column(String(255), nullable=True)
+    external_url = Column(String(500), nullable=True)
+    is_scraped = Column(Boolean, default=False)
+
+    source = relationship("JobSource", back_populates="jobs")
 
     applications = relationship(
         "Application",
