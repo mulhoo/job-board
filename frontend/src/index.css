@@ -5,6 +5,7 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(135deg, #f8e7f1, #fee6d9);
 }
 
 .container {
@@ -15,17 +16,33 @@ body {
 
 .btn {
   padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
+  border: 1px solid #FF4004;
+  border-radius: 8px;
   cursor: pointer;
-  background-color: #007bff;
+  background-color: #FF4004;
   color: white;
   text-decoration: none;
   display: inline-block;
+  font-weight: 500;
+  transition: all 0.2s ease;
 }
 
 .btn:hover {
-  background-color: #0056b3;
+  background-color: #e6360a;
+  border-color: #e6360a;
+  transform: translateY(-1px);
+}
+
+.btn.btn-outline {
+  background: transparent;
+  color: #FF4004;
+  border: 1px solid #FF4004;
+}
+
+.btn.btn-outline:hover {
+  background: #e6360a;
+  color: white;
+  border-color: #e6360a;
 }
 
 .card {
@@ -40,4 +57,52 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
+}
+
+.homepage-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 25px 20px;
+  background-image: url("../public/app_background.jpg");
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  border-bottom: 1px solid #FF4004;
+  padding-bottom: 12px;
+  margin-bottom: 24px;
+}
+
+.homepage-header .btn.btn-outline {
+  background: white;
+  color: #FF4004;
+  border: 1px solid #FF4004;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.homepage-header .btn.btn-outline:hover:not(:disabled) {
+  background: #e6360a;
+  color: white;
+  border-color: #e6360a;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+  .homepage-header {
+    background-attachment: scroll;
+  }
+}
+
+.login-btn {
+  margin-left: auto;
+}
+
+.homepage-header h1 {
+  font-size: 2.5rem;
+  color: #ffffff;
+  margin: 0;
 }
