@@ -2,141 +2,137 @@
 
 A full-stack job board application built with React and FastAPI, featuring admin job management, search/filtering, and a complete job lifecycle from draft to published to closed.
 
-## Features
+For photos of the application, see the app_photos folder. 
+
+## 🚀 Live Demo
+
+- **Frontend**: http://localhost:3000 (after setup)
+- **API Documentation**: http://localhost:8000/docs
+- **Admin Login**: admin@jobboard.com / admin123
+
+## ✨ Features
 
 ### For Job Seekers
-- Browse and search active job listings
-- Filter by key words, location, salary range, experience level, and company size
-- External application links taking you right to application
-- Clean, responsive interface
+- Browse and search active job listings with real-time filtering
+- Advanced filters: keywords, location, salary range, experience level, company size
+- Direct external application links
+- Clean, responsive Material-UI interface
 
 ### For Administrators
-- Create, edit, and manage job postings
-- Draft system for unpublished jobs
-- Job lifecycle management (Active → Closed → Archive/Delete)
-- Status-based job filtering (Active, Drafts, Closed)
+- Complete job lifecycle management (Draft → Active → Closed → Archive)
+- Rich job creation and editing interface with draft system
+- Status-based filtering and bulk operations
+- Role-based access control with JWT authentication
 
-## Tech Stack
+## 🛠 Tech Stack
 
-**Frontend:**
-- React 18
-- Material-UI components
-- CSS3 with custom styling
-- React Hot Toast for notifications
+| **Frontend** | **Backend** |
+|--------------|-------------|
+| React 18 | FastAPI |
+| Material-UI | SQLAlchemy ORM |
+| React Hot Toast | PostgreSQL |
+| CSS3 | JWT Authentication |
+| | Alembic Migrations |
 
-**Backend:**
-- FastAPI
-- SQLAlchemy ORM
-- PostgreSQL database
-- JWT authentication
-- Alembic migrations
+## 📋 Prerequisites
 
-## Getting Started
+- **Python**: 3.13+
+- **Node.js**: 18.18.2+
+- **PostgreSQL**: Running instance
+- **Package Manager**: Poetry (recommended) or pip
 
-### Prerequisites
-- Python 3.13+
-- Node.js 18.18.2+
-- PostgreSQL installed and running
+## ⚡ Quick Start
 
-### Setup Instructions
+### 1. Clone and Navigate
+```bash
+git clone <your-repo-url>
+cd propel-takehome
+```
 
-1. **Clone the repository**
-   ```bash
-   git clone <your-repo-url>
-   cd propel-takehome
-   ```
+### 2. Backend Setup
+```bash
+cd backend
 
-2. **Install Dependencies**
-   ```bash
-   # Backend dependencies (choose one method)
-   # Option 1: Poetry
-   poetry install
-   # Option 2: pip (if Poetry has issues)
-   pip install -r requirements.txt
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate
 
-   # Frontend dependencies
-   cd ../frontend
-   npm install
-   ```
+# Install dependencies
+pip install -r requirements.txt
 
-3. **Database Setup**
-   ```bash
-   # Create the database
-   psql -U postgres
-   CREATE DATABASE propel_db;
-   \q
+# Environment configuration
+cat > .env << EOF
+DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/propel_db
+SECRET_KEY=your-secret-key-here-change-for-production
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+EOF
+```
 
-   # Run database migrations
-   cd backend
-   alembic upgrade head
-   ```
+### 3. Database Setup
+```bash
+# Create database
+psql -U postgres -c "CREATE DATABASE propel_db;"
 
-4. **Environment Configuration**
-   ```bash
-   # Create backend .env file
-   cd backend
-   cat > .env << EOF
-   DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/propel_db
-   SECRET_KEY=your-secret-key-here
-   ACCESS_TOKEN_EXPIRE_MINUTES=30
-   EOF
+# Run migrations
+alembic upgrade head
 
-   # Note: Replace 'postgres:postgres' with your actual PostgreSQL username:password
-   ```
+# Seed sample data
+python3 seed_data.py
+```
 
-5. **Seed Database**
-   ```bash
-   cd backend
-   python3 seed_data.py
-   ```
+### 4. Frontend Setup
+```bash
+cd ../frontend
+npm install
 
-6. **Run the Application**
-   ```bash
-   # Terminal 1 - Backend
-   cd backend
-   uvicorn app.main:app --reload
+# Environment configuration
+cat > .env << EOF
+REACT_APP_API_URL=http://localhost:8000
+REACT_APP_ENV=development
+EOF
+```
 
-   # Terminal 2 - Frontend
-   cd frontend
-   npm start
-   ```
+### 5. Launch Application
+```bash
+# Terminal 1 - Backend (make sure virtual environment is activated)
+cd backend
+source venv/bin/activate  # If not already activated
+uvicorn app.main:app --reload
 
-7. **Access the Application**
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:8000
-   - API Documentation: http://localhost:8000/docs
+# Terminal 2 - Frontend
+cd frontend
+npm start
+```
 
-## API Endpoints
-All endpoints can be tested at https://localhost:8000/docs
+## 🔐 Login Credentials
+
+| **Role** | **Email** | **Password** |
+|----------|-----------|--------------|
+| Admin | admin@jobboard.com | admin123 |
+| User | sarah@techcorp.com | password123 |
+| User | mike@startupxyz.com | password123 |
+
+## 📡 API Endpoints
 
 ### Authentication
-
 - `POST /users/register` - User registration
 - `POST /users/login` - User login
 - `POST /users/refresh` - Token refresh
 
 ### Jobs
-
 - `GET /jobs/` - List jobs (with filtering)
 - `POST /jobs/` - Create job
-- `GET /jobs/{job_id}` - Get specific job by ID
-- `PUT /jobs/{job_id} `- Update job (only by poster)
-- `PATCH /jobs/{job_id}/status` - Update job status
+- `GET /jobs/{job_id}` - Get job details
+- `PUT /jobs/{job_id}` - Update job (owner only)
+- `PATCH /jobs/{job_id}/status?status={status}` - Update job status
 - `DELETE /jobs/{job_id}` - Delete job (Admin only)
 
-### Admin - Job Scraping
-
-- `GET /admin/scraping/sources` - Get available job board sources (Admin)
-- `POST /admin/scraping/trigger/{source}` - Trigger job scraping (Admin)
-- `GET /admin/scraping/preview/{source}` - Preview scraping results (Admin)
-- `GET /admin/scraping/history` - Get scraping history (Admin)
-- `GET /admin/scraping/stats` - Get scraping statistics (Admin)
-
-### System
-
-- `GET /` - Root endpoint
-- `GET /health` - Health check
-
+### Admin Features
+- `GET /admin/scraping/sources` - Available job sources
+- `POST /admin/scraping/trigger/{source}` - Trigger scraping
+- `GET /admin/scraping/preview/{source}` - Preview results
+- `GET /admin/scraping/history` - Scraping history
+- `GET /admin/scraping/stats` - Scraping statistics
 
 ## Development Notes
 I want to be honest that I used Claude to help me through the initial backend setup, debugging, writing my base CSS sheets, and creating the basics of this README. I have never used FastAPI before, and other than much simpler projects have only used Python in projects where setup was already done and there were examples I could work off of. I had Claude create the basic models/schemas/routers files for users. I'm really quick at learning new stacks when there's at least one working example, so with limited time and having not used FastAPI before I had Claude create that working example I could then work and learn off of independently for the rest of the backend work that needed done. This is how I've been able to quickly adapt to new stacks in the past.
