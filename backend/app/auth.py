@@ -1,3 +1,4 @@
+from fastapi import Depends, HTTPException, Header
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 import os
@@ -7,9 +8,9 @@ from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
-
 from app.database import get_db
 from app.models.user import User
+from typing import Optional
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-change-me")
 ALGORITHM = "HS256"
@@ -92,15 +93,24 @@ def get_current_admin_user(current_user: User = Depends(get_current_user)) -> Us
         )
     return current_user
 
-optional_security = HTTPBearer(auto_error=False)
+security_optional = HTTPBearer(auto_error=False)
 
 def get_current_user_optional(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_security),
+    credentials: HTTPAuthorizationCredentials = Depends(security_optional),
     db: Session = Depends(get_db),
 ) -> Optional[User]:
+    """Get current user if credentials are provided, otherwise return None"""
     if not credentials:
         return None
+
     try:
-        return get_current_user(credentials, db)
-    except HTTPException:
+        token = credentials.credentials
+        user_id = verify_token(token)
+        user = db.query(User).filter(User.id == user_id).first()
+
+        if user is None or not user.is_active:
+            return None
+
+        return user
+    except:
         return None

@@ -17,6 +17,7 @@ const HomePage = () => {
   const [page, setPage] = useState(0);
   const [createOpen, setCreateOpen] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [activeTab, setActiveTab] = useState('active'); // Admin tab state
 
   const [searchQuery, setSearchQuery] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
@@ -38,6 +39,8 @@ const HomePage = () => {
         ...(locationFilter && { location: locationFilter }),
         ...(companySizeFilter && { company_size: companySizeFilter }),
         ...(experienceFilter && { experience_level: experienceFilter.toLowerCase().replace(/[^a-z]/g, '_') }),
+        // Add status filter for admin users
+        ...(isAdmin() && { status: activeTab })
       };
 
       const newJobs = await fetchJobs(params);
@@ -56,11 +59,18 @@ const HomePage = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, searchQuery, locationFilter, companySizeFilter, experienceFilter, fetchJobs]);
+  }, [page, searchQuery, locationFilter, companySizeFilter, experienceFilter, fetchJobs, isAdmin, activeTab]);
 
   useEffect(() => {
     loadJobs(true);
   }, []);
+
+  // Reload jobs when admin tab changes
+  useEffect(() => {
+    if (isAdmin()) {
+      loadJobs(true);
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -87,41 +97,54 @@ const HomePage = () => {
   }, [hasMore, loading, loadJobs]);
 
   const filteredJobs = useMemo(() => {
-    if (!salaryFilter) return jobs;
+    let filtered = jobs;
 
-    return jobs.filter(job => {
-      if (!job.salary_range) return false;
+    // Filter by admin tab status (only for admin users)
+    if (isAdmin()) {
+      filtered = filtered.filter(job => job.status === activeTab);
+    } else {
+      // For non-admin users, only show active jobs
+      filtered = filtered.filter(job => job.status === 'active');
+    }
 
-      const salaryMatch = job.salary_range.match(/\$?([\d,]+)/g);
-      if (!salaryMatch) return false;
+    // Apply salary filter if selected
+    if (salaryFilter) {
+      filtered = filtered.filter(job => {
+        if (!job.salary_range) return false;
 
-      const minSalary = parseInt(salaryMatch[0].replace(/[,$]/g, ''));
+        const salaryMatch = job.salary_range.match(/\$?([\d,]+)/g);
+        if (!salaryMatch) return false;
 
-      switch (salaryFilter) {
-        case "Under $50,000":
-          return minSalary < 50000;
-        case "$50,000 - $75,000":
-          return minSalary >= 50000 && minSalary <= 75000;
-        case "$75,000 - $100,000":
-          return minSalary >= 75000 && minSalary <= 100000;
-        case "$100,000 - $150,000":
-          return minSalary >= 100000 && minSalary <= 150000;
-        case "$150,000 - $200,000":
-          return minSalary >= 150000 && minSalary <= 200000;
-        case "Over $200,000":
-          return minSalary > 200000;
-        default:
-          return true;
-      }
-    });
-  }, [jobs, salaryFilter]);
+        const minSalary = parseInt(salaryMatch[0].replace(/[,$]/g, ''));
+
+        switch (salaryFilter) {
+          case "Under $50,000":
+            return minSalary < 50000;
+          case "$50,000 - $75,000":
+            return minSalary >= 50000 && minSalary <= 75000;
+          case "$75,000 - $100,000":
+            return minSalary >= 75000 && minSalary <= 100000;
+          case "$100,000 - $150,000":
+            return minSalary >= 100000 && minSalary <= 150000;
+          case "$150,000 - $200,000":
+            return minSalary >= 150000 && minSalary <= 200000;
+          case "Over $200,000":
+            return minSalary > 200000;
+          default:
+            return true;
+        }
+      });
+    }
+
+    return filtered;
+  }, [jobs, salaryFilter, activeTab, isAdmin]);
 
   const handleJobDeleted = (id) => {
     setJobs(prev => prev.filter(j => j.id !== id));
   };
 
   const handleJobCreated = (job, isDraft) => {
-    if (!isDraft) {
+    if (!isDraft || activeTab === 'draft') {
       setJobs(prev => [job, ...prev]);
     }
     setCreateOpen(false);
@@ -223,9 +246,37 @@ const HomePage = () => {
         )}
       </section>
 
+      {/* Admin tabs for job status filtering */}
+      {isAdmin() && (
+        <div className="admin-tabs">
+          <button
+            className={`tab-button ${activeTab === 'active' ? 'active' : ''}`}
+            onClick={() => setActiveTab('active')}
+          >
+            Active Jobs
+          </button>
+          <button
+            className={`tab-button ${activeTab === 'draft' ? 'active' : ''}`}
+            onClick={() => setActiveTab('draft')}
+          >
+            Drafts
+          </button>
+          <button
+            className={`tab-button ${activeTab === 'closed' ? 'active' : ''}`}
+            onClick={() => setActiveTab('closed')}
+          >
+            Closed
+          </button>
+        </div>
+      )}
+
       <div className="job-listings-header">
         <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
-          <h2 className="job-listings-title">Job Listings</h2>
+          <h2 className="job-listings-title">
+            {isAdmin() && activeTab === 'draft' ? 'Drafts' :
+             isAdmin() && activeTab === 'closed' ? 'Closed Jobs' :
+             'Job Listings'}
+          </h2>
           {isAdmin() && (
             <Tooltip title="Add Job Listing">
               <Fab
@@ -258,7 +309,11 @@ const HomePage = () => {
         <div className="empty-state">
           <p>No jobs found matching your search criteria.</p>
           {jobs.length === 0 && (
-            <p><em>No jobs yet! Check back soon.</em></p>
+            <p><em>
+              {isAdmin() && activeTab === 'draft' ? 'No draft jobs yet.' :
+               isAdmin() && activeTab === 'closed' ? 'No closed jobs yet.' :
+               'No jobs yet! Check back soon.'}
+            </em></p>
           )}
         </div>
       ) : (

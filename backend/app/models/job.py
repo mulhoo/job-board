@@ -32,8 +32,8 @@ class Job(BaseModel):
     company = Column(String(255), nullable=False)
     description = Column(Text, nullable=False)
     location = Column(String(255))
-    salary_range = Column(String(100))  # Keep as string for flexibility
-    application_url = Column(String(500), nullable=False)  # Increased length
+    salary_range = Column(String(100))
+    application_url = Column(String(500), nullable=False)
 
     # New fields
     company_size = Column(
@@ -45,7 +45,7 @@ class Job(BaseModel):
             validate_strings=True,
             values_callable=lambda e: [m.value for m in e],
         ),
-        nullable=True  # Optional field
+        nullable=True
     )
 
     experience_level = Column(
@@ -57,7 +57,7 @@ class Job(BaseModel):
             validate_strings=True,
             values_callable=lambda e: [m.value for m in e],
         ),
-        nullable=True  # Optional field
+        nullable=True
     )
 
     status = Column(

@@ -6,39 +6,44 @@ from app.models import Job, JobStatus, CompanySize, ExperienceLevel
 from app.schemas import JobCreate, JobUpdate, JobResponse, JobSummary
 from app.auth import get_current_user
 from app.models.user import User
+from app.auth import get_current_user, get_current_user_optional
+from typing import Optional
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
+def parse_status(status_str: Optional[str]) -> Optional[JobStatus]:
+    if not status_str:
+        return None
+    try:
+        return JobStatus(status_str.lower())
+    except ValueError:
+        return None
 
-@router.post("/", response_model=JobResponse)
-def create_job(
-    job: JobCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Create a new job posting"""
-    # Create job with the current user as the poster
-    job_data = job.dict()
-    job_data["posted_by_id"] = current_user.id
-
-    db_job = Job(**job_data)
-    db.add(db_job)
-    db.commit()
-    db.refresh(db_job)
-    return db_job
-
-@router.get("/", response_model=List[JobSummary])
 @router.get("/", response_model=List[JobSummary])
 def list_jobs(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
+    status: Optional[str] = None,
     location: Optional[str] = None,
     company: Optional[str] = None,
     company_size: Optional[CompanySize] = None,
     experience_level: Optional[ExperienceLevel] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
-    """List ACTIVE jobs only - public endpoint"""
-    query = db.query(Job).filter(Job.status == JobStatus.ACTIVE)
+    """List jobs with optional status filtering for admins"""
+    query = db.query(Job)
+
+    status_filter = None
+    if status:
+        try:
+            status_filter = JobStatus(status.lower())
+        except ValueError:
+            status_filter = None
+
+    if current_user and current_user.is_admin and status_filter:
+        query = query.filter(Job.status == status_filter)
+    else:
+        query = query.filter(Job.status == JobStatus.ACTIVE)
 
     if location:
         query = query.filter(Job.location.ilike(f"%{location}%"))
