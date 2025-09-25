@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "../styles/components/LoginModal.css";
 import { useAuth } from "../context/AuthContext.js";
+import { API_BASE_URL } from "../constants";
 
 export default function LoginModal({ open, onClose, onSuccess }) {
   const [email, setEmail] = useState("");
@@ -33,7 +34,7 @@ export default function LoginModal({ open, onClose, onSuccess }) {
     e.preventDefault();
     setError(""); setLoading(true);
     try {
-      const res = await fetch("http://localhost:8000/users/login", {
+      const res = await fetch(`${API_BASE_URL}/users/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })

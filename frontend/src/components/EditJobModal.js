@@ -3,6 +3,7 @@ import { US_CITIES, COMPANY_SIZES, EXPERIENCE_LEVELS } from "../constants";
 import { useAuth } from "../context/AuthContext";
 import "../styles/components/CreateJobModal.css";
 import ModalPortal from "./ModalPortal";
+import toast from 'react-hot-toast';
 
 export default function UpdateJobModal({ open, onClose, job, onUpdated }) {
   const { makeAuthenticatedRequest } = useAuth();
@@ -100,6 +101,36 @@ export default function UpdateJobModal({ open, onClose, job, onUpdated }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    await updateJob(false);
+  };
+
+  const handlePublish = async () => {
+    const requiredFields = [
+      { value: title, name: 'Job Title' },
+      { value: company, name: 'Company' },
+      { value: description, name: 'Job Description' },
+      { value: applicationUrl, name: 'Application URL' }
+    ];
+
+    const missingFields = requiredFields.filter(field => !field.value.trim());
+
+    if (missingFields.length > 0) {
+      const fieldNames = missingFields.map(field => field.name).join(', ');
+      setError(`Please fill in the following required fields: ${fieldNames}`);
+      return;
+    }
+
+    try {
+      new URL(applicationUrl);
+    } catch {
+      setError('Please enter a valid application URL');
+      return;
+    }
+
+    await updateJob(true);
+  };
+
+  const updateJob = async (publish = false) => {
     setError("");
     setLoading(true);
 
@@ -108,18 +139,24 @@ export default function UpdateJobModal({ open, onClose, job, onUpdated }) {
       const experienceLevelEnum = experienceLevel ?
         experienceLevel.toLowerCase().replace(/[^a-z]/g, '_') : null;
 
+      const updateData = {
+        title,
+        company,
+        description,
+        application_url: applicationUrl,
+        location: location || null,
+        salary_range: getSalaryRange() || null,
+        company_size: companySizeEnum,
+        experience_level: experienceLevelEnum,
+      };
+
+      if (publish && job.status === 'draft') {
+        updateData.status = 'active';
+      }
+
       const response = await makeAuthenticatedRequest(`/jobs/${job.id}`, {
         method: "PUT",
-        body: JSON.stringify({
-          title,
-          company,
-          description,
-          application_url: applicationUrl,
-          location: location || null,
-          salary_range: getSalaryRange() || null,
-          company_size: companySizeEnum,
-          experience_level: experienceLevelEnum,
-        }),
+        body: JSON.stringify(updateData),
       });
 
       if (!response.ok) {
@@ -128,6 +165,10 @@ export default function UpdateJobModal({ open, onClose, job, onUpdated }) {
       }
 
       const updatedJob = await response.json();
+
+      if (publish && job.status === 'draft') {
+        toast.success('Job published successfully!');
+      }
 
       if (onUpdated) {
         onUpdated(updatedJob);
@@ -175,7 +216,7 @@ export default function UpdateJobModal({ open, onClose, job, onUpdated }) {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g. Senior Software Engineer"
-                  required
+                  required={job?.status !== 'draft'}
                 />
               </label>
 
@@ -185,7 +226,7 @@ export default function UpdateJobModal({ open, onClose, job, onUpdated }) {
                   value={company}
                   onChange={(e) => setCompany(e.target.value)}
                   placeholder="e.g. Acme Corp"
-                  required
+                  required={job?.status !== 'draft'}
                 />
               </label>
             </div>
@@ -196,8 +237,8 @@ export default function UpdateJobModal({ open, onClose, job, onUpdated }) {
                 rows={8}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe the role, responsibilities, requirements, and what makes this opportunity exciting..."
-                required
+                placeholder="Describe the role..."
+                required={job?.status !== 'draft'}
                 className="description-textarea"
               />
             </label>
@@ -209,7 +250,7 @@ export default function UpdateJobModal({ open, onClose, job, onUpdated }) {
                 value={applicationUrl}
                 onChange={(e) => setApplicationUrl(e.target.value)}
                 placeholder="https://company.com/careers/apply"
-                required
+                required={job?.status !== 'draft'}
               />
             </label>
 
@@ -308,13 +349,25 @@ export default function UpdateJobModal({ open, onClose, job, onUpdated }) {
               >
                 Cancel
               </button>
+
               <button
-                className="btn btn-primary"
+                className="btn btn-secondary"
                 type="submit"
                 disabled={loading}
               >
                 {loading ? "Updating..." : "Update Job"}
               </button>
+
+              {job?.status === 'draft' && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handlePublish}
+                  disabled={loading}
+                >
+                  {loading ? "Publishing..." : "Publish Job"}
+                </button>
+              )}
             </div>
           </form>
         </div>

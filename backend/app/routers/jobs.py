@@ -65,6 +65,22 @@ def get_job(job_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Job not found")
     return job
 
+@router.post("/", response_model=JobResponse)
+def create_job(
+    job: JobCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Create a new job posting"""
+    job_data = job.dict()
+    job_data["posted_by_id"] = current_user.id
+
+    db_job = Job(**job_data)
+    db.add(db_job)
+    db.commit()
+    db.refresh(db_job)
+    return db_job
+
 @router.put("/{job_id}", response_model=JobResponse)
 def update_job(
     job_id: int,
@@ -116,14 +132,14 @@ def delete_job(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Soft delete a job (mark as closed) - Admin only"""
+    """Permanently delete a job - Admin only"""
     if not current_user.is_admin:
-        raise HTTPException(status_code=403, detail="Only administrators can close jobs")
+        raise HTTPException(status_code=403, detail="Only administrators can delete jobs")
 
     db_job = db.query(Job).filter(Job.id == job_id).first()
     if not db_job:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    db_job.status = JobStatus.CLOSED
+    db.delete(db_job)
     db.commit()
-    return {"message": "Job closed successfully"}
+    return {"message": "Job deleted successfully"}

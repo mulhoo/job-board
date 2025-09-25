@@ -107,3 +107,35 @@
   word-break: break-word;
   overflow-wrap: anywhere;
 }
+
+.job-card .btn.btn-outline {
+  background: white;
+  color: #FF4004;
+  border: 1px solid #FF4004;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.job-card .btn.btn-outline:hover {
+  background: #e6360a;
+  color: white;
+  border-color: #e6360a;
+  transform: translateY(-1px);
+}
+
+.job-card-admin-icons {
+  display: flex;
+  gap: 2px;
+}
+
+.closed-job-notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  color: #6b7280;
+  font-style: italic;
+}

@@ -255,3 +255,52 @@
     padding-top: 16px;
   }
 }
+
+.job-listings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-tabs-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tab-link {
+  color: #FF4004;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  padding: 4px 0;
+  border-bottom: 2px solid transparent;
+}
+
+.tab-link:hover {
+  color: #e6360a;
+}
+
+.tab-link.active {
+  border-bottom-color: #FF4004;
+  font-weight: 600;
+}
+
+.tab-separator {
+  color: #d1d5db;
+  font-weight: 300;
+}

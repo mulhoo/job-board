@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "../styles/pages/JobDetailPage.css";
-
+import { API_BASE_URL } from "../constants";
 import { IconButton, Tooltip } from '@mui/material';
 import { Share, Check } from '@mui/icons-material';
 
@@ -19,7 +19,7 @@ export default function JobDetailPage() {
         setLoading(true);
         setError("");
 
-        const res = await fetch(`http://localhost:8000/jobs/${id}`);
+        const res = await fetch(`${API_BASE_URL}/jobs/${id}`);
 
         if (!res.ok) {
           if (res.status === 404) {

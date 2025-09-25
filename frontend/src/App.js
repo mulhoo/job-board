@@ -5,6 +5,7 @@ import JobDetailPage from './pages/JobDetailPage';
 import ApplicationsPage from './pages/ApplicationsPage';
 import LoginModal from './components/LoginModal';
 import { useAuth } from './context/AuthContext';
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   const { user, logout } = useAuth();
@@ -27,6 +28,7 @@ function App() {
           <Route path="/applications" element={<ApplicationsPage />} />
         </Routes>
         <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+        <Toaster position="top-right" />
       </div>
     </Router>
   );

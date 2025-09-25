@@ -17,8 +17,7 @@ const HomePage = () => {
   const [page, setPage] = useState(0);
   const [createOpen, setCreateOpen] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [activeTab, setActiveTab] = useState('active'); // Admin tab state
-
+  const [activeTab, setActiveTab] = useState('active');
   const [searchQuery, setSearchQuery] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
   const [salaryFilter, setSalaryFilter] = useState("");
@@ -39,7 +38,6 @@ const HomePage = () => {
         ...(locationFilter && { location: locationFilter }),
         ...(companySizeFilter && { company_size: companySizeFilter }),
         ...(experienceFilter && { experience_level: experienceFilter.toLowerCase().replace(/[^a-z]/g, '_') }),
-        // Add status filter for admin users
         ...(isAdmin() && { status: activeTab })
       };
 
@@ -65,7 +63,6 @@ const HomePage = () => {
     loadJobs(true);
   }, []);
 
-  // Reload jobs when admin tab changes
   useEffect(() => {
     if (isAdmin()) {
       loadJobs(true);
@@ -99,15 +96,12 @@ const HomePage = () => {
   const filteredJobs = useMemo(() => {
     let filtered = jobs;
 
-    // Filter by admin tab status (only for admin users)
     if (isAdmin()) {
       filtered = filtered.filter(job => job.status === activeTab);
     } else {
-      // For non-admin users, only show active jobs
       filtered = filtered.filter(job => job.status === 'active');
     }
 
-    // Apply salary filter if selected
     if (salaryFilter) {
       filtered = filtered.filter(job => {
         if (!job.salary_range) return false;
@@ -158,6 +152,12 @@ const HomePage = () => {
       </div>
     );
   }
+
+  const handleJobUpdated = (updatedJob) => {
+    setJobs(prev => prev.map(job =>
+      job.id === updatedJob.id ? updatedJob : job
+    ));
+  };
 
   return (
     <div className="homepage">
@@ -246,37 +246,37 @@ const HomePage = () => {
         )}
       </section>
 
-      {/* Admin tabs for job status filtering */}
-      {isAdmin() && (
-        <div className="admin-tabs">
-          <button
-            className={`tab-button ${activeTab === 'active' ? 'active' : ''}`}
-            onClick={() => setActiveTab('active')}
-          >
-            Active Jobs
-          </button>
-          <button
-            className={`tab-button ${activeTab === 'draft' ? 'active' : ''}`}
-            onClick={() => setActiveTab('draft')}
-          >
-            Drafts
-          </button>
-          <button
-            className={`tab-button ${activeTab === 'closed' ? 'active' : ''}`}
-            onClick={() => setActiveTab('closed')}
-          >
-            Closed
-          </button>
-        </div>
-      )}
-
       <div className="job-listings-header">
-        <div style={{ display: "flex", alignItems: "baseline", gap: "8px" }}>
-          <h2 className="job-listings-title">
-            {isAdmin() && activeTab === 'draft' ? 'Drafts' :
-             isAdmin() && activeTab === 'closed' ? 'Closed Jobs' :
-             'Job Listings'}
-          </h2>
+        <div className="header-left">
+          <h2 className="job-listings-title">Job Listings</h2>
+
+          {isAdmin() && (
+            <div className="admin-tabs-inline">
+              <span
+                className={`tab-link ${activeTab === 'active' ? 'active' : ''}`}
+                onClick={() => setActiveTab('active')}
+              >
+                Active
+              </span>
+              <span className="tab-separator">|</span>
+              <span
+                className={`tab-link ${activeTab === 'draft' ? 'active' : ''}`}
+                onClick={() => setActiveTab('draft')}
+              >
+                Drafts
+              </span>
+              <span className="tab-separator">|</span>
+              <span
+                className={`tab-link ${activeTab === 'closed' ? 'active' : ''}`}
+                onClick={() => setActiveTab('closed')}
+              >
+                Closed
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="header-right">
           {isAdmin() && (
             <Tooltip title="Add Job Listing">
               <Fab
@@ -301,8 +301,8 @@ const HomePage = () => {
               </Fab>
             </Tooltip>
           )}
+          <span className="job-count">({filteredJobs.length} jobs found)</span>
         </div>
-        <span className="job-count">({filteredJobs.length} jobs found)</span>
       </div>
 
       {filteredJobs.length === 0 ? (
@@ -311,8 +311,8 @@ const HomePage = () => {
           {jobs.length === 0 && (
             <p><em>
               {isAdmin() && activeTab === 'draft' ? 'No draft jobs yet.' :
-               isAdmin() && activeTab === 'closed' ? 'No closed jobs yet.' :
-               'No jobs yet! Check back soon.'}
+              isAdmin() && activeTab === 'closed' ? 'No closed jobs yet.' :
+              'No jobs yet! Check back soon.'}
             </em></p>
           )}
         </div>
@@ -323,6 +323,7 @@ const HomePage = () => {
               key={job.id}
               job={job}
               onDeleted={handleJobDeleted}
+              onUpdated={handleJobUpdated}
             />
           ))}
         </div>

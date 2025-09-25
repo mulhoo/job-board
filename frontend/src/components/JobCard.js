@@ -3,16 +3,19 @@ import "../styles/components/JobCard.css";
 import EditJobModal from "./EditJobModal";
 import ConfirmDialog from "./ConfirmDialog";
 import { useAuth } from "../context/AuthContext";
-
+import { API_BASE_URL } from "../constants";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import EditIcon from "@mui/icons-material/Edit";
 import ArchiveIcon from "@mui/icons-material/Archive";
+import DeleteIcon from "@mui/icons-material/Delete";
+import RestoreIcon from "@mui/icons-material/Restore";
+import ErrorIcon from "@mui/icons-material/Error";
+import toast from 'react-hot-toast';
 
-const JobCard = ({ job, onDeleted }) => {
+const JobCard = ({ job, onDeleted, onUpdated }) => {
   const { user } = useAuth();
   const isAdmin = !!user?.is_admin;
-
   const [editOpen, setEditOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -21,18 +24,58 @@ const JobCard = ({ job, onDeleted }) => {
     try {
       setBusy(true);
       const token = localStorage.getItem("access_token");
-      const res = await fetch(`http://localhost:8000/jobs/${job.id}`, {
-        method: "DELETE",
+
+      if (job.status === 'closed') {
+        const res = await fetch(`${API_BASE_URL}/jobs/${job.id}`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+        if (!res.ok) throw new Error("Failed to delete job");
+        toast.success('Job deleted successfully!');
+        onDeleted?.(job.id);
+      } else {
+        const res = await fetch(`${API_BASE_URL}/jobs/${job.id}/status?status=closed`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          }
+        });
+        if (!res.ok) throw new Error("Failed to close job");
+
+        if (onUpdated) {
+          onUpdated({ ...job, status: "closed" });
+        }
+      }
+
+      setConfirmOpen(false);
+    } catch (err) {
+      alert(err.message || "Operation failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleUnarchive() {
+    try {
+      setBusy(true);
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(`${API_BASE_URL}/jobs/${job.id}/status?status=draft`, {
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        }
       });
-      if (!res.ok) throw new Error(await res.text() || "Failed to delete job");
-      setConfirmOpen(false);
-      onDeleted?.(job.id);
+      if (!res.ok) throw new Error("Failed to unarchive job");
+      if (onUpdated) {
+        onUpdated({ ...job, status: "draft" });
+      }
     } catch (err) {
-      alert(err.message || "Delete failed");
+      alert(err.message || "Unarchive failed");
     } finally {
       setBusy(false);
     }
@@ -42,20 +85,39 @@ const JobCard = ({ job, onDeleted }) => {
     <article className="job-card">
       {isAdmin && (
         <div className="job-card-admin-icons">
-          <Tooltip title="Edit">
-            <IconButton size="small" onClick={() => setEditOpen(true)} aria-label="Edit job">
-              <EditIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Close">
-            <IconButton
-              size="small"
-              onClick={() => setConfirmOpen(true)}
-              aria-label="Delete job"
-            >
-              <ArchiveIcon className="archive-icon" fontSize="small" />
-            </IconButton>
-          </Tooltip>
+          {job.status === 'closed' ? (
+            <>
+              <Tooltip title="Unarchive">
+                <IconButton size="small" onClick={handleUnarchive} aria-label="Unarchive job">
+                  <RestoreIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Delete">
+                <IconButton size="small" onClick={() => setConfirmOpen(true)} aria-label="Delete job">
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </>
+          ) : (
+            <>
+              {job.status !== 'draft' && (
+                <Tooltip title="Edit">
+                  <IconButton size="small" onClick={() => setEditOpen(true)} aria-label="Edit job">
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )}
+              <Tooltip title="Close">
+                <IconButton
+                  size="small"
+                  onClick={() => setConfirmOpen(true)}
+                  aria-label="Close job"
+                >
+                  <ArchiveIcon className="archive-icon" fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </>
+          )}
         </div>
       )}
 
@@ -68,24 +130,49 @@ const JobCard = ({ job, onDeleted }) => {
       </div>
 
       <div className="job-card-actions">
-        <button className="btn btn-outline" onClick={() => window.location.assign(`/job/${job.id}`)}>
-          View Details
-        </button>
-        <button
-          className="btn btn-success"
-          disabled={!job.application_url}
-          onClick={() => job.application_url && window.open(job.application_url, "_blank")}
-        >
-          Apply Now
-        </button>
+        {job.status === 'draft' ? (
+          <button className="btn btn-outline" onClick={() => setEditOpen(true)}>
+            Edit Draft
+          </button>
+        ) : job.status === 'closed' ? (
+          <div className="closed-job-notice">
+            <ErrorIcon style={{ color: '#dc2626', fontSize: '18px', marginRight: '6px' }} />
+            <span>This job posting is closed</span>
+          </div>
+        ) : (
+          <>
+            <button
+              className="btn btn-outline"
+              onClick={() => window.location.assign(`/job/${job.id}`)}
+            >
+              View Details
+            </button>
+            <button
+              className="btn btn-success"
+              disabled={!job.application_url}
+              onClick={() => job.application_url && window.open(job.application_url, "_blank")}
+            >
+              Apply Now
+            </button>
+          </>
+        )}
       </div>
 
-      <EditJobModal open={editOpen} onClose={() => setEditOpen(false)} job={job} />
+      <EditJobModal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        job={job}
+        onUpdated={onUpdated}
+      />
+
       <ConfirmDialog
         open={confirmOpen}
-        title="Close Job"
-        message="Are you sure you want to close this job posting?"
-        confirmText={busy ? "Closing..." : "Yes, close"}
+        title={job.status === 'closed' ? "Delete Job" : "Close Job"}
+        message={job.status === 'closed'
+          ? "Are you sure you want to permanently delete this job posting?"
+          : "Are you sure you want to close this job posting?"
+        }
+        confirmText={busy ? (job.status === 'closed' ? "Deleting..." : "Closing...") : (job.status === 'closed' ? "Yes, delete" : "Yes, close")}
         cancelText="No"
         onCancel={() => setConfirmOpen(false)}
         onConfirm={handleDelete}
