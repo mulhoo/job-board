@@ -44,25 +44,39 @@ export function AuthProvider({ children }) {
   }
 
   const makeAuthenticatedRequest = async (url, options = {}) => {
-    const token = localStorage.getItem("access_token");
-
-    const headers = {
-      "Content-Type": "application/json",
-      ...options.headers,
-    };
-
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
+    const token = localStorage.getItem('access_token');
 
     const response = await fetch(`${API_BASE_URL}${url}`, {
       ...options,
-      headers,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+        ...options.headers,
+      },
     });
 
     if (response.status === 401) {
-      logout();
-      throw new Error("Session expired. Please log in again.");
+      try {
+        const refreshResponse = await fetch(`${API_BASE_URL}/users/refresh`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (refreshResponse.ok) {
+          const data = await refreshResponse.json();
+          localStorage.setItem('access_token', data.access_token);
+
+          return fetch(`${API_BASE_URL}${url}`, {
+            ...options,
+            headers: {
+              ...options.headers,
+              Authorization: `Bearer ${data.access_token}`
+            }
+          });
+        }
+      } catch (e) {
+        logout();
+      }
     }
 
     return response;

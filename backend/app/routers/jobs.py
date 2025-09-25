@@ -23,6 +23,7 @@ def list_jobs(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     status: Optional[str] = None,
+    search: Optional[str] = None,
     location: Optional[str] = None,
     company: Optional[str] = None,
     company_size: Optional[CompanySize] = None,
@@ -39,6 +40,16 @@ def list_jobs(
             status_filter = JobStatus(status.lower())
         except ValueError:
             status_filter = None
+
+    if search:
+        search_term = f"%{search}%"
+        from sqlalchemy import or_
+        query = query.filter(
+            or_(
+                Job.title.ilike(search_term),
+                Job.company.ilike(search_term)
+            )
+        )
 
     if current_user and current_user.is_admin and status_filter:
         query = query.filter(Job.status == status_filter)
@@ -93,11 +104,9 @@ def update_job(
     if not db_job:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    # Check if user owns this job or is admin
     if db_job.posted_by_id != current_user.id and not current_user.is_admin:
         raise HTTPException(status_code=403, detail="Not authorized to update this job")
 
-    # Update only provided fields
     for field, value in job_update.dict(exclude_unset=True).items():
         setattr(db_job, field, value)
 
@@ -117,7 +126,6 @@ def update_job_status(
     if not db_job:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    # Check if user owns this job or is admin
     if db_job.posted_by_id != current_user.id and not current_user.is_admin:
         raise HTTPException(status_code=403, detail="Not authorized to update this job")
 

@@ -6,7 +6,7 @@ from app.database import get_db
 from app.models import User
 from app.schemas import UserLogin, UserRegistration, UserResponse
 from app.auth import (
-    get_password_hash, verify_password, create_access_token,
+    get_password_hash, verify_password, create_access_token, get_current_user
 )
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -48,3 +48,9 @@ def login_user(payload: UserLogin, db: Session = Depends(get_db)):
         "token_type": "bearer",
         "is_admin": user.is_admin,
     }
+
+@router.post("/refresh")
+def refresh_token(current_user: User = Depends(get_current_user)):
+    """Refresh an access token"""
+    access_token = create_access_token(data={"sub": str(current_user.id)})
+    return {"access_token": access_token, "token_type": "bearer"}
