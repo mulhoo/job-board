@@ -15,7 +15,7 @@ function App() {
     <Router>
       <div className="App">
         <header className="homepage-header">
-          <h1>PropelEmployment</h1>
+          <h1>Job Board</h1>
           {user ? (
             <button className="btn btn-outline" onClick={logout}>Logout</button>
           ) : (
